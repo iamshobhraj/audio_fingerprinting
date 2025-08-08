@@ -1,42 +1,35 @@
+import numpy as np
+from scipy.ndimage import maximum_filter
 import hashlib
 from typing import List, Tuple
-from operator import itemgetter
+
+def get_peaks(S, amp_min=10):
+    """
+    Find local maxima (peaks) in a spectrogram magnitude array S.
+    Returns: List of (frequency_bin, time_bin)
+    """
+    neighborhood_size = (20, 10)  # freq x time
+    local_max = maximum_filter(S, size=neighborhood_size) == S
+    detected_peaks = np.argwhere(local_max & (S > amp_min))
+    # Each peak is (freq_bin, time_bin)
+    return [(int(f), int(t)) for f, t in detected_peaks]
 
 def generate_hashes(peaks: List[Tuple[int, int]], fan_value: int = 5) -> List[Tuple[str, int]]:
     """
-    Generate hashes from a list of peak frequencies and times.
-
-    :param peaks: A list of peak frequencies and times.
-    :param fan_value: The degree to which a fingerprint can be paired with its neighbors.
-    :return: A list of hashes with their corresponding offsets.
+    Generate robust hashes from peak pairs (like Shazam).
+    Returns: List of (hash, time_offset)
     """
-    # Indices for accessing frequency and time in the tuples
     idx_freq = 0
     idx_time = 1
-
-    # Sort peaks by time if needed
-    if True:
-        peaks.sort(key=itemgetter(1))
-
+    peaks.sort(key=lambda x: x[1])  # sort by time
     hashes = []
     for i, (freq1, t1) in enumerate(peaks):
-        # Iterate over neighboring peaks within the fan_value
         for j in range(1, fan_value):
             if i + j < len(peaks):
                 freq2, t2 = peaks[i + j]
-
-                # Calculate time difference between peaks
                 t_delta = t2 - t1
-
-                # Check if time difference falls within specified range
-                if 0 <= t_delta <= 200:
-                    # Generate hash using SHA-1 algorithm
-                    h = hashlib.sha1(f"{str(freq1)}|{str(freq2)}|{str(t_delta)}".encode('utf-8'))
-
-                    # Truncate hash to fixed length
-                    hash_value = h.hexdigest()[0:20]
-
-                    # Add hash and its corresponding time offset to the list
-                    hashes.append((hash_value, t1))
-
+                if 0 < t_delta <= 200:
+                    h = hashlib.sha1(f"{freq1}|{freq2}|{t_delta}".encode('utf-8'))
+                    hash_val = h.hexdigest()[0:20]
+                    hashes.append((hash_val, t1))
     return hashes

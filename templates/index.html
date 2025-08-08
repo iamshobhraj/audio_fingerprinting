@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Audio Fingerprinting Demo (Shazam-style)</title>
+</head>
+<body>
+    <h1>Audio Fingerprinting</h1>
+    <h2>Store Fingerprint</h2>
+    <form id="fingerprint-form" enctype="multipart/form-data">
+        <input type="file" name="file" required>
+        <button type="submit">Store</button>
+    </form>
+    <div id="store-result"></div>
+    <h2>Query Audio</h2>
+    <form id="query-form" enctype="multipart/form-data">
+        <input type="file" name="file" required>
+        <button type="submit">Query</button>
+    </form>
+    <div id="query-result"></div>
+    <script>
+    document.getElementById('fingerprint-form').onsubmit = async function(e) {
+        e.preventDefault();
+        let formData = new FormData(this);
+        let res = await fetch('/fingerprint', {method: 'POST', body: formData});
+        let data = await res.json();
+        document.getElementById('store-result').innerText = JSON.stringify(data, null, 2);
+    };
+    document.getElementById('query-form').onsubmit = async function(e) {
+        e.preventDefault();
+        let formData = new FormData(this);
+        let res = await fetch('/query', {method: 'POST', body: formData});
+        let data = await res.json();
+        document.getElementById('query-result').innerText = JSON.stringify(data, null, 2);
+    };
+    </script>
+</body>
+</html>
